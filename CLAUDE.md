@@ -1,3 +1,9 @@
+# Build
+
+- Use **pnpm** for package management (not npm or yarn)
+- Use **Vite** for development and building
+- Run `pnpm dev` for development, `pnpm build` for production, `pnpm test -- --run` for running test once
+
 # Code Style
 
 Build the simplest thing that works, with these constraints:

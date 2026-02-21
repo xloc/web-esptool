@@ -1,7 +1,39 @@
 <script setup lang="ts">
-import { useEspStore } from '../stores/esp'
+import { useEspStore, type Partition } from '../stores/esp'
 
 const esp = useEspStore()
+
+const typeNames: Record<number, string> = { 0: 'app', 1: 'data' }
+const subtypeNames: Record<number, Record<number, string>> = {
+  0: { 0: 'factory', 0x10: 'ota_0', 0x11: 'ota_1', 0x20: 'test' },
+  1: { 0x01: 'phy', 0x02: 'nvs', 0x03: 'coredump', 0x04: 'nvs_keys', 0x82: 'spiffs' },
+}
+
+function formatType(p: Partition) {
+  const typeName = typeNames[p.type] ?? `0x${p.type.toString(16)}`
+  const subName = subtypeNames[p.type]?.[p.subtype] ?? `0x${p.subtype.toString(16)}`
+  return `${typeName}.${subName}`
+}
+
+function formatSize(bytes: number) {
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+  return `${(bytes / 1024).toFixed(1)} KB`
+}
+
+const typeColors: Record<number, string> = {
+  0: 'bg-blue-500', // app
+  1: 'bg-green-500', // data
+}
+
+function typeColor(p: Partition) {
+  return typeColors[p.type] ?? 'bg-slate-500'
+}
+
+function formatHex(n: number) {
+  const hex = n.toString(16).padStart(8, '0')
+  return '0x' + hex.replace(/(.{4})/g, '$1 ').slice(0, -1)
+}
+
 </script>
 
 <template>
@@ -19,9 +51,43 @@ const esp = useEspStore()
         class="bg-red-200 text-bg-800 hover:bg-red-100 px-2 py-1 rounded-lg">Disconnect</button>
     </section>
 
-    <section class="">
-      <h2>Partitions</h2>
-      <p>(partition list placeholder)</p>
+    <section class="w-full max-w-7xl flex flex-col px-4 gap-y-4">
+      <h2 class="text-2xl text-slate-500">
+        Partitions
+        <span class="text-sm text-slate-400 ml-2">
+          {{ esp.chipInfo?.flashSize ? formatSize(esp.chipInfo.flashSize * 1024) : '' }}
+          ({{ formatHex(0) }} – {{ esp.chipInfo?.flashSize ? formatHex(esp.chipInfo.flashSize * 1024) : '' }})
+        </span>
+      </h2>
+
+      <!-- Size bar -->
+      <div class="flex h-2 gap-x-2">
+        <div v-for="p in esp.partitions" :key="p.offset" class="rounded-full" :class="typeColor(p)"
+          :style="{ flexGrow: p.size, flexBasis: '1rem' }">
+        </div>
+      </div>
+
+      <!-- Partition details -->
+      <div class="flex gap-x-4">
+        <article v-for="p in esp.partitions" :key="p.offset" class="flex-1 p-2 bg-white rounded-lg shadow-sm">
+          <h3 class="text-lg font-semibold mb-2">{{ p.name }}</h3>
+          <dl class="flex flex-wrap gap-x-1 gap-y-1">
+            <div class="flex gap-x-1 items-baseline px-2 bg-slate-100 rounded-full text-sm">
+              <dt class="text-slate-400">type</dt>
+              <dd class="text-slate-900">{{ formatType(p) }}</dd>
+            </div>
+            <div class="flex gap-x-1 items-baseline px-2 bg-slate-100 rounded-full text-sm">
+              <dt class="text-slate-400">size</dt>
+              <dd class="text-slate-900">{{ formatSize(p.size) }}</dd>
+            </div>
+            <div class="w-full text-slate-300 text-xs flex justify-between">
+              <span>{{ formatHex(p.offset) }}</span>
+              <span>{{ formatHex(p.offset + p.size) }}</span>
+            </div>
+          </dl>
+        </article>
+      </div>
+
     </section>
 
   </div>
