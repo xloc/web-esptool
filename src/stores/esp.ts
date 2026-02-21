@@ -32,16 +32,20 @@ export const useEspStore = defineStore('esp', () => {
         romBaudrate: 115200,
       })
 
-      await loader.main()
-
-      chipInfo.value = {
-        chipName: loader.chip.CHIP_NAME,
-        features: (await loader.chip.getChipFeatures(loader)).join(', '),
-        mac: (await loader.chip.readMac(loader)).toUpperCase(),
-        flashSize: await loader.getFlashSize(),
+      try {
+        await loader.main()
+        chipInfo.value = {
+          chipName: loader.chip.CHIP_NAME,
+          features: (await loader.chip.getChipFeatures(loader)).join(', '),
+          mac: (await loader.chip.readMac(loader)).toUpperCase(),
+          flashSize: await loader.getFlashSize(),
+        }
+        esploader.value = loader
+      } catch {
+        // Chip not detected (not in bootloader mode) - keep port open for serial monitor
+        chipInfo.value = null
+        esploader.value = null
       }
-
-      esploader.value = loader
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
       await disconnect()
