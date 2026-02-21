@@ -1,19 +1,7 @@
 <script setup lang="ts">
-import { useEspStore, type Partition } from '../stores/esp'
+import { useEspStore } from '../stores/esp'
 
 const esp = useEspStore()
-
-const typeNames: Record<number, string> = { 0: 'app', 1: 'data' }
-const subtypeNames: Record<number, Record<number, string>> = {
-  0: { 0: 'factory', 0x10: 'ota_0', 0x11: 'ota_1', 0x20: 'test' },
-  1: { 0x01: 'phy', 0x02: 'nvs', 0x03: 'coredump', 0x04: 'nvs_keys', 0x82: 'spiffs' },
-}
-
-function formatType(p: Partition) {
-  const typeName = typeNames[p.type] ?? `0x${p.type.toString(16)}`
-  const subName = subtypeNames[p.type]?.[p.subtype] ?? `0x${p.subtype.toString(16)}`
-  return `${typeName}.${subName}`
-}
 
 function formatSize(bytes: number) {
   if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`
@@ -25,7 +13,7 @@ const typeColors: Record<number, string> = {
   1: 'bg-green-500', // data
 }
 
-function typeColor(p: Partition) {
+function typeColor(p: { type: number }) {
   return typeColors[p.type] ?? 'bg-slate-500'
 }
 
@@ -74,11 +62,14 @@ function formatHex(n: number) {
           <dl class="flex flex-wrap gap-x-1 gap-y-1">
             <div class="flex gap-x-1 items-baseline px-2 bg-slate-100 rounded-full text-sm">
               <dt class="text-slate-400">type</dt>
-              <dd class="text-slate-900">{{ formatType(p) }}</dd>
+              <dd class="text-slate-900">{{ p.typeName }}.{{ p.subtypeName }}</dd>
             </div>
             <div class="flex gap-x-1 items-baseline px-2 bg-slate-100 rounded-full text-sm">
               <dt class="text-slate-400">size</dt>
               <dd class="text-slate-900">{{ formatSize(p.size) }}</dd>
+            </div>
+            <div v-if="p.encrypted" class="px-2 bg-amber-100 rounded-full text-sm text-amber-700">
+              encrypted
             </div>
             <div class="w-full text-slate-300 text-xs flex justify-between">
               <span>{{ formatHex(p.offset) }}</span>

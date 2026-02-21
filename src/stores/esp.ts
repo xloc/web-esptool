@@ -9,12 +9,29 @@ export interface ChipInfo {
   flashSize?: number;
 }
 
-export interface Partition {
-  name: string;
-  type: number;
-  subtype: number;
-  offset: number;
-  size: number;
+const typeNames: Record<number, string> = { 0: 'app', 1: 'data' }
+const subtypeNames: Record<number, Record<number, string>> = {
+  0: { 0: 'factory', 0x10: 'ota_0', 0x11: 'ota_1', 0x20: 'test' },
+  1: { 0x01: 'phy', 0x02: 'nvs', 0x03: 'coredump', 0x04: 'nvs_keys', 0x82: 'spiffs' },
+}
+
+export class Partition {
+  constructor(
+    public name: string,
+    public type: number,
+    public subtype: number,
+    public offset: number,
+    public size: number,
+    public encrypted: boolean,
+  ) {}
+
+  get typeName() {
+    return typeNames[this.type] ?? `0x${this.type.toString(16)}`
+  }
+
+  get subtypeName() {
+    return subtypeNames[this.type]?.[this.subtype] ?? `0x${this.subtype.toString(16)}`
+  }
 }
 
 const PARTITION_TABLE_OFFSET = 0x8000;
@@ -48,8 +65,10 @@ export function parsePartitions(data: Uint8Array): Partition[] {
     const name = new TextDecoder().decode(
       nameBytes.slice(0, nullIndex === -1 ? 16 : nullIndex),
     );
+    const flags = view.getUint32(i + 28, true);
+    const encrypted = (flags & 0x01) !== 0;
 
-    partitions.push({ name, type, subtype, offset, size });
+    partitions.push(new Partition(name, type, subtype, offset, size, encrypted));
   }
 
   return partitions;
