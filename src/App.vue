@@ -11,16 +11,9 @@ const inspectingFile = ref<File | null>(null)
 </script>
 
 <template>
-  <main>
-    <BinaryInspector
-      v-if="inspectingFile"
-      :file="inspectingFile"
-      @close="inspectingFile = null"
-    />
-    <StartScreen
-      v-else-if="!esp.port"
-      @inspect-firmware="inspectingFile = $event"
-    />
+  <main class="h-screen">
+    <BinaryInspector v-if="inspectingFile" :file="inspectingFile" @close="inspectingFile = null" />
+    <StartScreen v-else-if="!esp.port" @inspect-firmware="inspectingFile = $event" />
     <MaintenanceView v-else-if="esp.chipInfo" />
     <SerialMonitor v-else />
   </main>
