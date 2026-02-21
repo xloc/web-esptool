@@ -26,6 +26,10 @@ function formatHex(n: number) {
 
 <template>
   <div class="relative h-full w-full flex flex-col justify-center items-center">
+    <div v-if="esp.erasing" class="absolute right-4 top-4">
+      Erasing flash...
+      <progress></progress>
+    </div>
     <section class="m-2 absolute left-0 top-0 flex gap-2 items-center">
       <h2>Chip</h2>
       <dl class="flex gap-2 items-center">
@@ -40,13 +44,18 @@ function formatHex(n: number) {
     </section>
 
     <section class="w-full max-w-7xl flex flex-col px-4 gap-y-4">
-      <h2 class="text-2xl text-slate-500">
-        Partitions
-        <span class="text-sm text-slate-400 ml-2">
-          {{ esp.chipInfo?.flashSize ? formatSize(esp.chipInfo.flashSize * 1024) : '' }}
-          ({{ formatHex(0) }} – {{ esp.chipInfo?.flashSize ? formatHex(esp.chipInfo.flashSize * 1024) : '' }})
-        </span>
-      </h2>
+      <div class="flex items-center gap-4">
+        <h2 class="text-2xl text-slate-500">
+          Partitions
+          <span class="text-sm text-slate-400 ml-2">
+            {{ esp.chipInfo?.flashSize ? formatSize(esp.chipInfo.flashSize * 1024) : '' }}
+            ({{ formatHex(0) }} – {{ esp.chipInfo?.flashSize ? formatHex(esp.chipInfo.flashSize * 1024) : '' }})
+          </span>
+        </h2>
+        <button @click="esp.erase" :disabled="esp.erasing">
+          {{ esp.erasing ? 'Erasing...' : 'Erase Flash' }}
+        </button>
+      </div>
 
       <!-- Size bar -->
       <div class="flex h-2 gap-x-2">

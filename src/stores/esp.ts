@@ -80,6 +80,7 @@ export const useEspStore = defineStore("esp", () => {
   const chipInfo = ref<ChipInfo | null>(null);
   const partitions = ref<Partition[]>([]);
   const connecting = ref(false);
+  const erasing = ref(false);
   const error = ref<string | null>(null);
 
   async function connect() {
@@ -142,14 +143,30 @@ export const useEspStore = defineStore("esp", () => {
     partitions.value = [];
   }
 
+  async function erase() {
+    if (!esploader.value) return;
+    erasing.value = true;
+    try {
+      // esptool-js eraseFlash() doesn't support progress callbacks
+      await esploader.value.eraseFlash();
+    } finally {
+      erasing.value = false;
+    }
+    // Refresh partition table
+    const data = await esploader.value.readFlash(PARTITION_TABLE_OFFSET, 0xc00);
+    partitions.value = parsePartitions(data);
+  }
+
   return {
     port,
     esploader,
     chipInfo,
     partitions,
     connecting,
+    erasing,
     error,
     connect,
     disconnect,
+    erase,
   };
 });
