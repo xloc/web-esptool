@@ -34,6 +34,18 @@ export class Partition {
   }
 }
 
+export interface UploadFile {
+  file: File;
+  address: number;
+  data: string;
+}
+
+export interface UploadProgress {
+  fileIndex: number;
+  written: number;
+  total: number;
+}
+
 const PARTITION_TABLE_OFFSET = 0x8000;
 const PARTITION_ENTRY_SIZE = 32;
 const PARTITION_MAGIC = [0xaa, 0x50];
@@ -81,6 +93,8 @@ export const useEspStore = defineStore("esp", () => {
   const partitions = ref<Partition[]>([]);
   const connecting = ref(false);
   const erasing = ref(false);
+  const uploading = ref(false);
+  const uploadProgress = ref<UploadProgress>({ fileIndex: 0, written: 0, total: 0 });
   const error = ref<string | null>(null);
 
   async function connect() {
@@ -157,6 +171,32 @@ export const useEspStore = defineStore("esp", () => {
     partitions.value = parsePartitions(data);
   }
 
+  async function upload(files: UploadFile[]) {
+    if (!esploader.value || files.length === 0) return;
+    uploading.value = true;
+    uploadProgress.value = { fileIndex: 0, written: 0, total: 0 };
+
+    try {
+      await esploader.value.writeFlash({
+        fileArray: files.map(f => ({ data: f.data, address: f.address })),
+        flashSize: 'keep',
+        flashMode: 'keep',
+        flashFreq: 'keep',
+        eraseAll: false,
+        compress: true,
+        reportProgress: (fileIndex, written, total) => {
+          uploadProgress.value = { fileIndex, written, total };
+        },
+      });
+    } finally {
+      uploading.value = false;
+    }
+
+    // Refresh partition table
+    const data = await esploader.value.readFlash(PARTITION_TABLE_OFFSET, 0xc00);
+    partitions.value = parsePartitions(data);
+  }
+
   return {
     port,
     esploader,
@@ -164,9 +204,12 @@ export const useEspStore = defineStore("esp", () => {
     partitions,
     connecting,
     erasing,
+    uploading,
+    uploadProgress,
     error,
     connect,
     disconnect,
     erase,
+    upload,
   };
 });

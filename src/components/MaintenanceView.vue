@@ -3,6 +3,20 @@ import { useEspStore } from '../stores/esp'
 
 const esp = useEspStore()
 
+const emit = defineEmits<{
+  uploadFiles: [files: File[]]
+}>()
+
+function onDrop(e: DragEvent) {
+  const files = e.dataTransfer?.files
+  if (files?.length) emit('uploadFiles', [...files])
+}
+
+function onFileSelect(e: Event) {
+  const files = (e.target as HTMLInputElement).files
+  if (files?.length) emit('uploadFiles', [...files])
+}
+
 function formatSize(bytes: number) {
   if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`
   return `${(bytes / 1024).toFixed(1)} KB`
@@ -25,7 +39,7 @@ function formatHex(n: number) {
 </script>
 
 <template>
-  <div class="relative h-full w-full flex flex-col justify-center items-center">
+  <div class="relative h-full w-full flex flex-col justify-center items-center" @dragover.prevent @drop.prevent="onDrop">
     <div v-if="esp.erasing" class="absolute right-4 top-4">
       Erasing flash...
       <progress></progress>
@@ -55,6 +69,12 @@ function formatHex(n: number) {
         <button @click="esp.erase" :disabled="esp.erasing">
           {{ esp.erasing ? 'Erasing...' : 'Erase Flash' }}
         </button>
+        <label>
+          <input type="file" accept=".bin" multiple @change="onFileSelect" hidden>
+          <button type="button" onclick="this.previousElementSibling.click()">
+            Upload Firmware
+          </button>
+        </label>
       </div>
 
       <!-- Size bar -->
