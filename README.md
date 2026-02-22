@@ -2,6 +2,8 @@
 
 A web-based tool for flashing firmware to ESP8266/ESP32 microcontrollers using the WebSerial API.
 
+https://xloc.github.io/web-esptool/
+
 ## Tech Stack
 
 - Vue 3 + TypeScript
